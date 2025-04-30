@@ -1,0 +1,60 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!78 &1
+TagManager:
+  serializedVersion: 3
+  tags:
+  - Floor
+  - Humans
+  - zombie
+  layers:
+  - Default
+  - TransparentFX
+  - Ignore Raycast
+  - 
+  - Water
+  - UI
+  - Background_Img
+  - Human
+  - Zombie
+  - Wall
+  - Obstacle
+  - humanLayer
+  - Floor
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - 
+  - Top
+  - 
+  - 
+  - 
+  - 
+  - 
+  m_SortingLayers:
+  - name: Background
+    uniqueID: 3125961165
+    locked: 0
+  - name: Default
+    uniqueID: 0
+    locked: 0
+  - name: Human
+    uniqueID: 4137667319
+    locked: 0
+  - name: Zombie
+    uniqueID: 3145890691
+    locked: 0
+  - name: Top
+    uniqueID: 1523606349
+    locked: 0
+  m_RenderingLayers:
+  - Default

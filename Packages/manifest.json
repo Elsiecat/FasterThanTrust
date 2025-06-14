@@ -1,6 +1,7 @@
 {
   "dependencies": {
     "com.h8man.2d.navmeshplus": "https://github.com/h8man/NavMeshPlus.git",
+    "com.unity.2d.tilemap.extras": "https://github.com/Unity-Technologies/2d-extras.git",
     "com.unity.ai.navigation": "2.0.7",
     "com.unity.collab-proxy": "2.5.2",
     "com.unity.feature.2d": "2.0.1",

@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cfd3bd3a5ce8e444f8193b2ed192684a, type: 3}
   m_Name: Stat_Citizen
   m_EditorClassIdentifier: 
-  maxHp: 1e+9
+  maxHp: 30
   moveSpeed: 10
   defense: 0
   evasion: 0

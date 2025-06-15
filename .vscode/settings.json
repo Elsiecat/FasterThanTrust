@@ -56,5 +56,5 @@
         "temp/": true,
         "Temp/": true
     },
-    "dotnet.defaultSolution": "Faster Than Trust.sln"
+    "dotnet.defaultSolution": "FasterThanTrust.sln"
 }

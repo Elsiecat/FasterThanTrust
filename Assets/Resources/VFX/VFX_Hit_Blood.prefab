@@ -4858,7 +4858,7 @@ GameObject:
   - component: {fileID: 114000012755067798}
   - component: {fileID: 4895490089698486741}
   m_Layer: 0
-  m_Name: BloodEffect1
+  m_Name: VFX_Hit_Blood
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

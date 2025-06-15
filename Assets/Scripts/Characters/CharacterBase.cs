@@ -1,5 +1,6 @@
 using UnityEngine;
 using Utils;
+using Combat;
 
 /// <summary>
 /// 캐릭터의 공통 기능을 담당하는 베이스 클래스.
@@ -60,6 +61,8 @@ public abstract class CharacterBase : MonoBehaviour
     /// </summary>
     public virtual void TakeDamage(float rawDamage, CharacterBase attacker)
     {
+
+        
         if (_state == CharacterState.Dead)
             return;
 
@@ -79,6 +82,12 @@ public abstract class CharacterBase : MonoBehaviour
         //입은 데미지를 표현해주는 VFX (텍스트 위로 떠오르는거
         Managers.DamageIndicator.SpawnDamageIndicator(transform.position, Mathf.RoundToInt(finalDamage), isCritical);
 
+        //피해를 입었을 때의 이펙트를 띄워주기 위함
+        CombatEventHub.RaiseHit(new HitEventArgs
+        {
+            HitPosition = transform.position,
+            WeaponUsed = attacker._weapon
+        });
 
         HitFlasher.Flash(_spriteRenderer, _flashMaterial, _originalMaterial, this);
 

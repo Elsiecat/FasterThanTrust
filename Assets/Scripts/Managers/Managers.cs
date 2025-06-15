@@ -15,6 +15,7 @@ public class Managers : MonoBehaviour
     public static ObjectPoolManager Pool => Instance._pool;
     public static SkillCardManager SkillCard => Instance._skillCard;
     public static DamageIndicatorManager DamageIndicator => Instance._damageIndicator;
+    public static VFXManager vFXManager => Instance._vfx;
 
     private GameManager _game;
     private StageManager _stage;
@@ -25,6 +26,7 @@ public class Managers : MonoBehaviour
     private SkillCardManager _skillCard;
     private DamageIndicatorManager _damageIndicator;
     public PlayerRuntimeStat _playerRuntimeStat;
+    public VFXManager _vfx;
 
 
     private void Awake()

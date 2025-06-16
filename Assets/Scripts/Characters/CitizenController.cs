@@ -239,9 +239,6 @@ public class CitizenController : CharacterBase
 
         _state = CharacterState.Dead;
 
-        if (_infectionDOT != null)
-            StopCoroutine(_infectionDOT.StartDOT(this));
-
         if (_col != null)
             _col.enabled = false;
 

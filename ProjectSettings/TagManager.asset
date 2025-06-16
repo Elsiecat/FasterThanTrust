@@ -21,7 +21,7 @@ TagManager:
   - Obstacle
   - humanLayer
   - Floor
-  - 
+  - VFX_OnCharacter(forSorting)
   - 
   - 
   - 
@@ -55,6 +55,9 @@ TagManager:
     locked: 0
   - name: Top
     uniqueID: 1523606349
+    locked: 0
+  - name: VFX_OnCharacter(forSorting)
+    uniqueID: 3759731617
     locked: 0
   m_RenderingLayers:
   - Default

@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 400000}
   - component: {fileID: 19800000}
   - component: {fileID: 19900000}
-  m_Layer: 0
+  m_Layer: 13
   m_Name: Blood-BloodSpark
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -108,7 +108,7 @@ ParticleSystem:
       m_RotationOrder: 4
   moveWithTransform: 0
   moveWithCustomTransform: {fileID: 0}
-  scalingMode: 2
+  scalingMode: 0
   randomSeed: 0
   InitialModule:
     serializedVersion: 3
@@ -4793,7 +4793,6 @@ ParticleSystemRenderer:
   m_RendererPriority: 0
   m_Materials:
   - {fileID: 2100000, guid: 5a91fd224978ec3499b8c1809967ba55, type: 2}
-  - {fileID: 0}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -4857,7 +4856,8 @@ GameObject:
   - component: {fileID: 400002}
   - component: {fileID: 114000012755067798}
   - component: {fileID: 4895490089698486741}
-  m_Layer: 0
+  - component: {fileID: 1164872617392382782}
+  m_Layer: 13
   m_Name: VFX_Hit_Blood
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -4873,8 +4873,8 @@ Transform:
   m_GameObject: {fileID: 100002}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 4, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 0.4, y: 0.4, z: 0.4}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 446252}
@@ -4907,6 +4907,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4b4986b0a83e4544c9a5e2bd9876673e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!210 &1164872617392382782
+SortingGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 100002}
+  m_Enabled: 1
+  m_SortingLayerID: -535235679
+  m_SortingLayer: 4
+  m_SortingOrder: 30
+  m_SortAtRoot: 0
 --- !u!1 &100004
 GameObject:
   m_ObjectHideFlags: 0
@@ -4918,7 +4930,7 @@ GameObject:
   - component: {fileID: 400004}
   - component: {fileID: 19800002}
   - component: {fileID: 19900002}
-  m_Layer: 0
+  m_Layer: 13
   m_Name: Blood-Blood
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -5015,7 +5027,7 @@ ParticleSystem:
       m_RotationOrder: 4
   moveWithTransform: 0
   moveWithCustomTransform: {fileID: 0}
-  scalingMode: 2
+  scalingMode: 0
   randomSeed: 0
   InitialModule:
     serializedVersion: 3
@@ -5334,7 +5346,7 @@ ParticleSystem:
         m_RotationOrder: 4
     startRotationX:
       serializedVersion: 2
-      minMaxState: 0
+      minMaxState: 3
       scalar: 0
       minScalar: 0
       maxCurve:
@@ -5387,7 +5399,7 @@ ParticleSystem:
         m_RotationOrder: 4
     startRotationY:
       serializedVersion: 2
-      minMaxState: 0
+      minMaxState: 3
       scalar: 0
       minScalar: 0
       maxCurve:
@@ -9664,7 +9676,6 @@ ParticleSystemRenderer:
   m_RendererPriority: 0
   m_Materials:
   - {fileID: 2100000, guid: 60448ca25adb70e4484bba6fa9825421, type: 2}
-  - {fileID: 0}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -9728,7 +9739,7 @@ GameObject:
   - component: {fileID: 400006}
   - component: {fileID: 19800004}
   - component: {fileID: 19900004}
-  m_Layer: 0
+  m_Layer: 13
   m_Name: Blood-SmokeSpark
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -9825,7 +9836,7 @@ ParticleSystem:
       m_RotationOrder: 4
   moveWithTransform: 0
   moveWithCustomTransform: {fileID: 0}
-  scalingMode: 2
+  scalingMode: 0
   randomSeed: 0
   InitialModule:
     serializedVersion: 3
@@ -10020,7 +10031,7 @@ ParticleSystem:
         m_RotationOrder: 4
     startSizeY:
       serializedVersion: 2
-      minMaxState: 0
+      minMaxState: 3
       scalar: 1
       minScalar: 1
       maxCurve:
@@ -10073,7 +10084,7 @@ ParticleSystem:
         m_RotationOrder: 4
     startSizeZ:
       serializedVersion: 2
-      minMaxState: 0
+      minMaxState: 3
       scalar: 1
       minScalar: 1
       maxCurve:
@@ -10126,7 +10137,7 @@ ParticleSystem:
         m_RotationOrder: 4
     startRotationX:
       serializedVersion: 2
-      minMaxState: 0
+      minMaxState: 3
       scalar: 0
       minScalar: 0
       maxCurve:
@@ -10179,7 +10190,7 @@ ParticleSystem:
         m_RotationOrder: 4
     startRotationY:
       serializedVersion: 2
-      minMaxState: 0
+      minMaxState: 3
       scalar: 0
       minScalar: 0
       maxCurve:
@@ -14456,7 +14467,6 @@ ParticleSystemRenderer:
   m_RendererPriority: 0
   m_Materials:
   - {fileID: 2100000, guid: 84a61b7686a3381468e8b1999162cc39, type: 2}
-  - {fileID: 0}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -14520,7 +14530,7 @@ GameObject:
   - component: {fileID: 446252}
   - component: {fileID: 19870896}
   - component: {fileID: 19938388}
-  m_Layer: 0
+  m_Layer: 13
   m_Name: Blood-Smoke
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -14617,7 +14627,7 @@ ParticleSystem:
       m_RotationOrder: 4
   moveWithTransform: 0
   moveWithCustomTransform: {fileID: 0}
-  scalingMode: 2
+  scalingMode: 0
   randomSeed: 0
   InitialModule:
     serializedVersion: 3
@@ -14936,7 +14946,7 @@ ParticleSystem:
         m_RotationOrder: 4
     startRotationX:
       serializedVersion: 2
-      minMaxState: 0
+      minMaxState: 3
       scalar: 0
       minScalar: 0
       maxCurve:
@@ -14989,7 +14999,7 @@ ParticleSystem:
         m_RotationOrder: 4
     startRotationY:
       serializedVersion: 2
-      minMaxState: 0
+      minMaxState: 3
       scalar: 0
       minScalar: 0
       maxCurve:
@@ -19266,7 +19276,6 @@ ParticleSystemRenderer:
   m_RendererPriority: 0
   m_Materials:
   - {fileID: 2100000, guid: 84a61b7686a3381468e8b1999162cc39, type: 2}
-  - {fileID: 0}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0

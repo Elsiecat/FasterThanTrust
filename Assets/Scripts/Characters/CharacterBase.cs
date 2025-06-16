@@ -31,6 +31,9 @@ public abstract class CharacterBase : MonoBehaviour
     private Material _originalMaterial;
     private Material _flashMaterial;
 
+    //감염이 발생했을 때 도트뎀 들어가게 할 용도로 쓰는 코루틴
+    private Coroutine _infectionCoroutine;
+
     /// <summary>
     /// 기본 Awake: Collider 초기화, 스탯/무기 로드 및 체력 설정
     /// </summary>
@@ -94,7 +97,7 @@ public abstract class CharacterBase : MonoBehaviour
         if (attacker != null && attacker._weapon != null)
         {
             //무기에 맞았으면 무조건 '감염여부'판단
-            ApplyInfection(attacker._weapon);
+            ApplyInfection(attacker._weapon, attacker);
         }
 
         if (_currentHP <= 0)
@@ -105,20 +108,25 @@ public abstract class CharacterBase : MonoBehaviour
 
     /// <summary>
     /// 감염 DOT 효과를 적용한다.
+    /// 
     /// </summary>
-    public virtual void ApplyInfection(Weapon attackerWeapon)
+    public virtual void ApplyInfection(Weapon attackerWeapon, CharacterBase attacker)
     {
         if (_state != CharacterState.Alive) return;
 
+        // 이미 감염 중이면 무시
+        if (_state == CharacterState.Infected || _infectionDOT != null)
+            return;
+
         if (Random.value <= attackerWeapon.infectionChance)
         {
-          //  Debug.Log("감염시도됨");
             _state = CharacterState.Infected;
-            _infectionDOT = attackerWeapon.CreateDOT();
-            StartCoroutine(_infectionDOT.StartDOT(this));
+
+            _infectionDOT = attackerWeapon.CreateDOT(attacker);
+            if (_infectionDOT != null)
+                _infectionCoroutine = CoroutineRunner.Instance.StartCoroutine(_infectionDOT.StartDOT(this, attacker));
         }
     }
-
 
 
     /// <summary>
@@ -130,8 +138,8 @@ public abstract class CharacterBase : MonoBehaviour
 
         _state = CharacterState.Dead;
 
-        if (_infectionDOT != null)
-            StopCoroutine(_infectionDOT.StartDOT(this));
+        if (_infectionCoroutine != null) // ✅ 핸들로 중지
+            CoroutineRunner.Instance.StopCoroutine(_infectionCoroutine);
 
         if (_col != null)
             _col.enabled = false;

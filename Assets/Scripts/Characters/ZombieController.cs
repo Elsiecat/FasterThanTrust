@@ -116,7 +116,7 @@ public class ZombieController : CharacterBase
             }
 
             target.TakeDamage(finalDamage, this);
-            target.ApplyInfection(_weapon); // ← 감염 시도 추가
+            target.ApplyInfection(_weapon, this); // ← 감염 시도 추가
             _lastAttackTime = Time.time;
 
           //  Debug.Log($"🧟 좀비가 {target.name}을 공격했습니다. 피해량: {finalDamage}");

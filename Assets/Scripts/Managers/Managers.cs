@@ -15,7 +15,7 @@ public class Managers : MonoBehaviour
     public static ObjectPoolManager Pool => Instance._pool;
     public static SkillCardManager SkillCard => Instance._skillCard;
     public static DamageIndicatorManager DamageIndicator => Instance._damageIndicator;
-    public static VFXManager vFXManager => Instance._vfx;
+    public static VFXManager VFXManager => Instance._vfx;
 
     private GameManager _game;
     private StageManager _stage;

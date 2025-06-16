@@ -29,16 +29,16 @@ public class VFXEventResponder : MonoBehaviour
         // Special 
         {
             case WeaponType.Melee:
-                Managers.vFXManager.Play("BloodSplash", args.HitPosition, Quaternion.identity);
+                Managers.VFXManager.Play("VFX_Hit_Blood", args.HitPosition, Quaternion.identity);
                 break;
             case WeaponType.Ranged:
-                Managers.vFXManager.Play("GunImpact", args.HitPosition, Quaternion.identity);
+                Managers.VFXManager.Play("GunImpact", args.HitPosition, Quaternion.identity);
                 break;
             case WeaponType.Explosive:
-                Managers.vFXManager.Play("BluntHit", args.HitPosition, Quaternion.identity);
+                Managers.VFXManager.Play("BluntHit", args.HitPosition, Quaternion.identity);
                 break;
             default:
-                Managers.vFXManager.Play("DefaultHit", args.HitPosition, Quaternion.identity);
+                Managers.VFXManager.Play("DefaultHit", args.HitPosition, Quaternion.identity);
                 break;
         }
     }

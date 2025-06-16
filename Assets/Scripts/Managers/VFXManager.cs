@@ -1,13 +1,24 @@
+using System.Collections;
 using UnityEngine;
 
-public class VFXManager
+/// <summary>
+/// 이펙트를 ObjectPool에서 꺼내 재생하고, 일정 시간 후 반환하는 매니저.
+/// MonoBehaviour로 만들어 자체 코루틴 사용.
+/// </summary>
+public class VFXManager : MonoBehaviour
 {
-    public void Play(string effectName, Vector3 pos, Quaternion rot)
+    public void Play(string effectName, Vector3 pos, Quaternion rot, float duration = 2f)
     {
-        var prefab = Resources.Load<GameObject>($"Effects/{effectName}");
-        if (prefab == null) return;
+        string path = $"VFX/{effectName}";
+        GameObject instance = Managers.Pool.Spawn(path, pos, rot);
+        if (instance == null) return;
 
-        GameObject instance = GameObject.Instantiate(prefab, pos, rot);
-        GameObject.Destroy(instance, 3f); // 재생 후 자동 삭제
+        StartCoroutine(ReturnAfter(path, instance, duration));
+    }
+
+    private IEnumerator ReturnAfter(string path, GameObject go, float delay)
+    {
+        yield return new WaitForSeconds(delay);
+        Managers.Pool.Despawn(path, go);
     }
 }

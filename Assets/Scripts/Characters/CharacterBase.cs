@@ -1,5 +1,6 @@
 using UnityEngine;
 using Utils;
+using Combat;
 
 /// <summary>
 /// 캐릭터의 공통 기능을 담당하는 베이스 클래스.
@@ -29,6 +30,9 @@ public abstract class CharacterBase : MonoBehaviour
     // 플래시용 머티리얼 관리
     private Material _originalMaterial;
     private Material _flashMaterial;
+
+    //감염이 발생했을 때 도트뎀 들어가게 할 용도로 쓰는 코루틴
+    private Coroutine _infectionCoroutine;
 
     /// <summary>
     /// 기본 Awake: Collider 초기화, 스탯/무기 로드 및 체력 설정
@@ -60,6 +64,8 @@ public abstract class CharacterBase : MonoBehaviour
     /// </summary>
     public virtual void TakeDamage(float rawDamage, CharacterBase attacker)
     {
+
+        
         if (_state == CharacterState.Dead)
             return;
 
@@ -79,13 +85,19 @@ public abstract class CharacterBase : MonoBehaviour
         //입은 데미지를 표현해주는 VFX (텍스트 위로 떠오르는거
         Managers.DamageIndicator.SpawnDamageIndicator(transform.position, Mathf.RoundToInt(finalDamage), isCritical);
 
+        //피해를 입었을 때의 이펙트를 띄워주기 위함
+        CombatEventHub.RaiseHit(new HitEventArgs
+        {
+            HitPosition = transform.position,
+            WeaponUsed = attacker._weapon
+        });
 
         HitFlasher.Flash(_spriteRenderer, _flashMaterial, _originalMaterial, this);
 
         if (attacker != null && attacker._weapon != null)
         {
             //무기에 맞았으면 무조건 '감염여부'판단
-            ApplyInfection(attacker._weapon);
+            ApplyInfection(attacker._weapon, attacker);
         }
 
         if (_currentHP <= 0)
@@ -96,20 +108,25 @@ public abstract class CharacterBase : MonoBehaviour
 
     /// <summary>
     /// 감염 DOT 효과를 적용한다.
+    /// 
     /// </summary>
-    public virtual void ApplyInfection(Weapon attackerWeapon)
+    public virtual void ApplyInfection(Weapon attackerWeapon, CharacterBase attacker)
     {
         if (_state != CharacterState.Alive) return;
 
+        // 이미 감염 중이면 무시
+        if (_state == CharacterState.Infected || _infectionDOT != null)
+            return;
+
         if (Random.value <= attackerWeapon.infectionChance)
         {
-          //  Debug.Log("감염시도됨");
             _state = CharacterState.Infected;
-            _infectionDOT = attackerWeapon.CreateDOT();
-            StartCoroutine(_infectionDOT.StartDOT(this));
+
+            _infectionDOT = attackerWeapon.CreateDOT(attacker);
+            if (_infectionDOT != null)
+                _infectionCoroutine = CoroutineRunner.Instance.StartCoroutine(_infectionDOT.StartDOT(this, attacker));
         }
     }
-
 
 
     /// <summary>
@@ -121,8 +138,8 @@ public abstract class CharacterBase : MonoBehaviour
 
         _state = CharacterState.Dead;
 
-        if (_infectionDOT != null)
-            StopCoroutine(_infectionDOT.StartDOT(this));
+        if (_infectionCoroutine != null) // ✅ 핸들로 중지
+            CoroutineRunner.Instance.StopCoroutine(_infectionCoroutine);
 
         if (_col != null)
             _col.enabled = false;

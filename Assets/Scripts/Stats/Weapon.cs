@@ -28,8 +28,12 @@ public class Weapon : ScriptableObject
     /// <summary>
     /// 무기 데이터에 따라 감염 DOT 효과를 생성한다.
     /// </summary>
-    public InfectionDOT CreateDOT()
+    public InfectionDOT CreateDOT(CharacterBase attacker)
     {
+        if (dotDuration <= 0f || dotTickInterval <= 0f)
+            return null;
+
         return new InfectionDOT(dotDuration, dotTickInterval, dotDamagePerTick);
     }
+
 }

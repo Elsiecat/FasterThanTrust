@@ -15,6 +15,7 @@ public class Managers : MonoBehaviour
     public static ObjectPoolManager Pool => Instance._pool;
     public static SkillCardManager SkillCard => Instance._skillCard;
     public static DamageIndicatorManager DamageIndicator => Instance._damageIndicator;
+    public static VFXManager VFXManager => Instance._vfx;
 
     private GameManager _game;
     private StageManager _stage;
@@ -25,6 +26,7 @@ public class Managers : MonoBehaviour
     private SkillCardManager _skillCard;
     private DamageIndicatorManager _damageIndicator;
     public PlayerRuntimeStat _playerRuntimeStat;
+    public VFXManager _vfx;
 
 
     private void Awake()
@@ -47,16 +49,19 @@ public class Managers : MonoBehaviour
     /// </summary>
     private void CreateAllManagers()
     {
-        _resource   = new GameObject("ResourcesManager").AddComponent<ResourcesManager>();
-        _pool       = new GameObject("ObjectPoolManager").AddComponent<ObjectPoolManager>();
-        _stage      = new GameObject("StageManager").AddComponent<StageManager>();
-        _spawn      = new GameObject("SpawnManager").AddComponent<SpawnManager>();
-        _game       = new GameObject("GameManager").AddComponent<GameManager>();
-        _ui         = new GameObject("UIManager").AddComponent<UIManager>();
-        _skillCard  = new GameObject("SkillCardManager").AddComponent<SkillCardManager>();
+        
+        _vfx = new GameObject("VFXManager").AddComponent<VFXManager>();
+        _resource = new GameObject("ResourcesManager").AddComponent<ResourcesManager>();
+        _pool = new GameObject("ObjectPoolManager").AddComponent<ObjectPoolManager>();
+        _stage = new GameObject("StageManager").AddComponent<StageManager>();
+        _spawn = new GameObject("SpawnManager").AddComponent<SpawnManager>();
+        _game = new GameObject("GameManager").AddComponent<GameManager>();
+        _ui = new GameObject("UIManager").AddComponent<UIManager>();
+        _skillCard = new GameObject("SkillCardManager").AddComponent<SkillCardManager>();
         _damageIndicator = new GameObject("DamageIndicatorManager").AddComponent<DamageIndicatorManager>();
         _playerRuntimeStat = new PlayerRuntimeStat();
-
+        
+        _vfx.transform.parent = transform;
         _resource.transform.parent = transform;
         _pool.transform.parent = transform;
         _stage.transform.parent = transform;
@@ -64,7 +69,7 @@ public class Managers : MonoBehaviour
         _game.transform.parent = transform;
         _ui.transform.parent = transform;
         _skillCard.transform.parent = transform;
-        _damageIndicator.transform.parent = transform; // 추가
+        _damageIndicator.transform.parent = transform;
     }
 
     /// <summary>

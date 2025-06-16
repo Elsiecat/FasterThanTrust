@@ -22,7 +22,7 @@ TagManager:
   - humanLayer
   - Floor
   - VFX_OnCharacter(forSorting)
-  - 
+  - VFX_UnderCharacter(forSorting)
   - 
   - 
   - 
@@ -46,6 +46,9 @@ TagManager:
     locked: 0
   - name: Default
     uniqueID: 0
+    locked: 0
+  - name: VFX_UnderCharacter(forSorting)
+    uniqueID: 2716455229
     locked: 0
   - name: Human
     uniqueID: 4137667319

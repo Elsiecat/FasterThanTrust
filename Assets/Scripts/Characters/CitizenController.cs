@@ -215,7 +215,7 @@ public class CitizenController : CharacterBase
     private void ClickInfection()
     {
         if (_state != CharacterState.Alive) return;
-
+        Managers.VFXManager.Play("VFX_ClickHolyPower", transform.position, Quaternion.identity);
         _state = CharacterState.Infected;
         Die();
     }

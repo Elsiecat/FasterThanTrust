@@ -14,22 +14,32 @@ public class VFXManager : MonoBehaviour
         CombatEventHub.OnHit -= HandleHit;
     }
 
-    public void Play(string effectName, Vector3 pos, Quaternion rot, float duration = 2f)
+    public void Play(string effectName, Vector3 pos, Quaternion rot, float duration = 2f, Transform followTarget = null)
     {
         string path = $"VFX/{effectName}";
         GameObject instance = Managers.Pool.Spawn(path, pos, rot);
-        instance.transform.position = new Vector3(pos.x, pos.y, -5f);
         if (instance == null) return;
-        // 🔽 여기서 ParticleSystemRenderer의 레이어 순서 조정
-            var psRenderer = instance.GetComponent<ParticleSystemRenderer>();
-            if (psRenderer != null)
-            {
-                psRenderer.sortingLayerName = "VFX_OnCharacter(forSorting)";  // 이 Sorting Layer는 Unity에서 직접 만들어둬야 함
-                psRenderer.sortingOrder = 30;            // Sprite보다 위로 오게
-            }
 
+        // ❗ 따라붙게 만들되, Parent로 붙이지 않고 위치만 따라가게 함
+        if (followTarget != null)
+            CoroutineRunner.Instance.StartCoroutine(FollowAndReturn(path, instance, followTarget, duration));
+        else
+            CoroutineRunner.Instance.StartCoroutine(ReturnAfter(path, instance, duration));
+    }
 
-        StartCoroutine(ReturnAfter(path, instance, duration));
+        private IEnumerator FollowAndReturn(string path, GameObject go, Transform followTarget, float duration)
+    {
+        float elapsed = 0f;
+
+        while (elapsed < duration && go != null && followTarget != null)
+        {
+            go.transform.position = followTarget.position;
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+
+        if (go != null)
+            Managers.Pool.Despawn(path, go);
     }
 
     private IEnumerator ReturnAfter(string path, GameObject go, float delay)

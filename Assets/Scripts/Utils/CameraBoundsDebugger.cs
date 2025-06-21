@@ -1,4 +1,4 @@
-using UnityEngine;
+/*using UnityEngine;
 
 /// <summary>
 /// 현재 Stage 정보를 기반으로 카메라 이동 최대 영역을 디버그 표시하는 컴포넌트.
@@ -6,6 +6,7 @@ using UnityEngine;
 /// </summary>
 public class CameraBoundsDebugger : MonoBehaviour
 {
+     자동화 생성 할 때나 쓰던거
     private Vector2 _stageTileSize = Vector2.zero;
     private Vector2 _fullSize = Vector2.zero;
 
@@ -48,4 +49,6 @@ public class CameraBoundsDebugger : MonoBehaviour
         Gizmos.DrawLine(topRight, topLeft);
         Gizmos.DrawLine(topLeft, bottomLeft);
     }
+    
 }
+*/

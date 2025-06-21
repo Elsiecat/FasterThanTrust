@@ -16,12 +16,10 @@ public static class Define
     // 리소스 경로
     public const string PATH_CITIZEN_PREFAB = "Prefabs/Citizen";
     public const string PATH_ZOMBIE_PREFAB = "Prefabs/Zombie";
-    public const string PATH_TILE_SPRITE = "Sprites/Map/FloorTile";
-    public const string PATH_TILEMAP_TILE = "Tiles/Tile_Floor";
     public const string PATH_DAMAGE_TEXT = "VFX/t_damage";
 
+    public const int WALL_THICKNESS = 3;
 
-    public const int WALL_THICKNESS = 3; 
     /// <summary>
     /// 게임 상태를 나타내는 열거형.
     /// </summary>
@@ -32,6 +30,7 @@ public static class Define
         Playing,
         GameOver
     }
+
     public enum SceneType
     {
         Unknown,
@@ -44,13 +43,14 @@ public static class Define
     {
         Peaceful,       // 평화로움 (아무 위협 없음)
         Suspicious,     // 긴장 상태 (아직 좀비는 안 보임, 경계)
-        ZombieNearby    // 주변에 좀비 있음 (회피 모드)
+        ZombieNearby,   // 주변에 좀비 있음 (회피 모드)
     }
+
     public enum ZombieState
     {
         Peaceful,       // 주변에 시민이 없음
-        Suspicious,     // 긴장 상태 (아직 좀비는 안 보임, 경계)
-        HumanNearby    // 주변에 사람 있음 (공격 모드)
+        Suspicious,     // 긴장 상태 (아직 시민은 안 보임, 경계)
+        HumanNearby     // 주변에 사람 있음 (공격 모드)
     }
 
     public enum InfectedState
@@ -59,4 +59,14 @@ public static class Define
         Infected
     }
 
+    /// <summary>
+    /// 캐릭터의 생존/감염 상태를 나타냄.
+    /// </summary>
+    public enum CharacterState
+    {
+        Alive,
+        Infected,
+        Dead,
+        Zombie
+    }
 }

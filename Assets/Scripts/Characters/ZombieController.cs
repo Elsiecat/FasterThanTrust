@@ -6,18 +6,39 @@ using UnityEngine;
 /// </summary>
 public class ZombieController : CharacterBase
 {
+    [Header("AI 설정")]
+    [SerializeField] private float _wanderCooldown = 2f;
+    [SerializeField] private float _wanderRadius = 8f;
     [SerializeField] private LayerMask _humanMask;
     [SerializeField] private LayerMask _obstacleMask;
+
+    private float _wanderTimer;
+    private Vector2 _wanderTarget;
 
     private Transform _targetHuman;
     private Define.ZombieState _zombieState = Define.ZombieState.Peaceful;
     private float _lastAttackTime;
 
-    [SerializeField] private float _wanderCooldown = 2f;  // 이동 타겟 갱신 주기
-    [SerializeField] private float _wanderRadius = 10f;   // 배회 반경
-    private float _wanderTimer;
-    private Vector2 _currentWanderTarget;
+    private Rigidbody2D _rb;
 
+    /// <summary>
+    /// 외부 데이터 키
+    /// </summary>
+    protected override string StatKey => "Stat_Zombie";
+    protected override string WeaponKey => "Weapon_Zombie";
+
+    private void Awake()
+    {
+        _rb = GetComponent<Rigidbody2D>();
+        if (_rb == null) _rb = gameObject.AddComponent<Rigidbody2D>();
+        _rb.gravityScale = 0f;
+        _rb.constraints = RigidbodyConstraints2D.FreezeRotation;
+
+        _humanMask = 1 << LayerMask.NameToLayer(Define.LAYER_HUMAN);
+        _obstacleMask = LayerMask.GetMask("Wall", "Obstacle");
+
+        _wanderTimer = Random.Range(0.5f, 1.5f);
+    }
 
     private void Update()
     {
@@ -28,7 +49,7 @@ public class ZombieController : CharacterBase
     }
 
     /// <summary>
-    /// 시야 내 인간을 감지하고, 상태를 결정한다.
+    /// 좀비의 상태를 업데이트한다 (시야 내 시민 탐색)
     /// </summary>
     private void UpdateState()
     {
@@ -41,8 +62,7 @@ public class ZombieController : CharacterBase
         {
             if (hit == null || hit.transform == null) continue;
 
-            RaycastHit2D check = Physics2D.Linecast(transform.position, hit.transform.position, _obstacleMask);
-            if (check.collider != null) continue;
+            if (Physics2D.Linecast(transform.position, hit.transform.position, _obstacleMask)) continue;
 
             float dist = Vector2.Distance(transform.position, hit.transform.position);
             if (dist < closestDist)
@@ -65,7 +85,7 @@ public class ZombieController : CharacterBase
     }
 
     /// <summary>
-    /// 좀비의 상태에 따라 행동을 수행한다.
+    /// 상태에 따른 행동 수행
     /// </summary>
     private void ActByState()
     {
@@ -84,13 +104,13 @@ public class ZombieController : CharacterBase
                 break;
 
             case Define.ZombieState.Suspicious:
-                // 추후 경계 행동 추가 가능
+                // 경계 모드 (미구현)
                 break;
         }
     }
 
     /// <summary>
-    /// 일정 범위 내의 인간을 공격한다.
+    /// 시민 공격 시도
     /// </summary>
     private void TryAttack()
     {
@@ -99,53 +119,59 @@ public class ZombieController : CharacterBase
         float dist = Vector2.Distance(transform.position, _targetHuman.position);
         if (dist > _weapon.attackRange) return;
 
-        float attackCooldown = 1f / _weapon.attackSpeed;
-        if (Time.time < _lastAttackTime + attackCooldown) return;
+        float cooldown = 1f / _weapon.attackSpeed;
+        if (Time.time < _lastAttackTime + cooldown) return;
 
         var target = _targetHuman.GetComponent<CharacterBase>();
         if (target != null && target.IsAlive())
         {
-            float finalDamage = _weapon.attackPower;
-
-            // 치명타 처리
+            float damage = _weapon.attackPower;
             bool isCrit = Random.value < _weapon.criticalChance;
-            if (isCrit)
-            {
-                finalDamage *= 2f;
-            //    Debug.Log("💥 치명타 발생!");
-            }
+            if (isCrit) damage *= 2f;
 
-            target.TakeDamage(finalDamage, this);
-            target.ApplyInfection(_weapon, this); // ← 감염 시도 추가
+            target.TakeDamage(damage, this);
+            target.ApplyInfection(_weapon, this);
+
             _lastAttackTime = Time.time;
-
-          //  Debug.Log($"🧟 좀비가 {target.name}을 공격했습니다. 피해량: {finalDamage}");
         }
     }
 
     /// <summary>
-    /// 주변을 무작위로 배회한다.
+    /// 무작위 위치로 배회
     /// </summary>
     private void WanderRandomly()
     {
-    // 타겟 갱신 타이머
-    _wanderTimer -= Time.deltaTime;
-    if (_wanderTimer <= 0f)
-    {
-        _wanderTimer = _wanderCooldown;
-        _currentWanderTarget = (Vector2)transform.position + Random.insideUnitCircle.normalized * _wanderRadius;
+        _wanderTimer -= Time.deltaTime;
+        if (_wanderTimer <= 0f)
+        {
+            _wanderTimer = _wanderCooldown;
+            Vector2 random = Random.insideUnitCircle.normalized * _wanderRadius;
+            _wanderTarget = (Vector2)transform.position + random;
+        }
+
+        MoveTo(_wanderTarget);
     }
 
-    // 갱신된 타겟으로 이동
-    MoveTo(_currentWanderTarget);
-}
     /// <summary>
-    /// 좀비 사망 처리.
+    /// 대상 지점으로 이동
+    /// </summary>
+    public override void MoveTo(Vector2 target)
+    {
+        if (_characterStat == null || _rb == null) return;
+
+        Vector2 direction = (target - _rb.position).normalized;
+        Vector2 newPos = _rb.position + direction * _characterStat.moveSpeed * Time.deltaTime;
+
+        _rb.MovePosition(newPos);
+    }
+
+    /// <summary>
+    /// 사망 처리
     /// </summary>
     protected override void HandleDeathOutcome()
     {
-        Debug.Log("좀비가 사망했습니다. 시체로 남습니다.");
-        // TODO: 시체 애니메이션 등 추가 가능
+        // TODO: 시체 비주얼 이펙트 처리 등 추가 가능
+        Destroy(gameObject);
     }
 
 #if UNITY_EDITOR
@@ -155,6 +181,12 @@ public class ZombieController : CharacterBase
         {
             Gizmos.color = Color.red;
             Gizmos.DrawWireSphere(transform.position, _weapon.attackRange);
+        }
+
+        if (_characterStat != null)
+        {
+            Gizmos.color = Color.yellow;
+            Gizmos.DrawWireSphere(transform.position, _characterStat.sightRadius);
         }
     }
 #endif

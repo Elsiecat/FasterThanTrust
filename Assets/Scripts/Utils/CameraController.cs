@@ -2,7 +2,7 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 
 /// <summary>
-/// 절대 바운더리 밖으로 나가지 않는 카메라 컨트롤러 (WASD, 드래그, 줌 포함)
+/// BoxCollider2D로 정의된 영역 내에서만 이동/줌이 가능한 카메라 컨트롤러.
 /// </summary>
 public class CameraController : MonoBehaviour
 {
@@ -12,20 +12,13 @@ public class CameraController : MonoBehaviour
 
     [Header("줌 설정")]
     [SerializeField] private float _zoomSpeed = 5f;
-
-    private float _zoomMin; // 이 맵에서 화면이 경계 넘지 않는 최소 줌 (zoom out 최대치)
-    private float _zoomMax; // 약간 더 확대 허용
+    [SerializeField] private float _zoomMin = 2f;
+    [SerializeField] private float _zoomMax = 20f;
 
     private Camera _camera;
-    private Vector2 _stageSize;
-    private Vector2 _minLimit;
-    private Vector2 _maxLimit;
-
-    private bool _stageInitialized = false;
+    private Bounds _cameraBounds;
+    private bool _boundInitialized = false;
     private Vector3? _dragStartWorldPos = null;
-
-    private const float TILE_UNIT_SIZE = 1f;
-    private const int WALL_THICKNESS = 3;
 
     private void Awake()
     {
@@ -34,7 +27,7 @@ public class CameraController : MonoBehaviour
 
     private void Update()
     {
-        if (!_stageInitialized) return;
+        if (!_boundInitialized) return;
 
         bool moved = HandleMove();
         bool dragged = HandleDrag();
@@ -80,36 +73,9 @@ public class CameraController : MonoBehaviour
         if (Mathf.Abs(scroll) < 0.01f) return false;
 
         float targetSize = _camera.orthographicSize - scroll * _zoomSpeed;
-
-        if (scroll < 0) // 줌 아웃
-        {
-            if (CanZoomOut(targetSize))
-            {
-                _camera.orthographicSize = Mathf.Min(targetSize, _zoomMax);
-                return true;
-            }
-        }
-        else // 줌 인
-        {
-            _camera.orthographicSize = Mathf.Clamp(targetSize, _zoomMin, _zoomMax);
-            return true;
-        }
-
-        return false;
+        _camera.orthographicSize = Mathf.Clamp(targetSize, _zoomMin, _zoomMax);
+        return true;
     }
-    private bool CanZoomOut(float targetSize)
-    {
-        float camHalfWidth = targetSize * _camera.aspect;
-        float camHalfHeight = targetSize;
-
-        Vector3 camPos = transform.position;
-
-        bool insideX = camPos.x - camHalfWidth >= _minLimit.x && camPos.x + camHalfWidth <= _maxLimit.x;
-        bool insideY = camPos.y - camHalfHeight >= _minLimit.y && camPos.y + camHalfHeight <= _maxLimit.y;
-
-        return insideX && insideY;
-    }
-
 
     private void ClampPosition()
     {
@@ -117,8 +83,15 @@ public class CameraController : MonoBehaviour
         float camWidth = _camera.orthographicSize * _camera.aspect;
 
         Vector3 pos = transform.position;
-        pos.x = Mathf.Clamp(pos.x, _minLimit.x + camWidth, _maxLimit.x - camWidth);
-        pos.y = Mathf.Clamp(pos.y, _minLimit.y + camHeight, _maxLimit.y - camHeight);
+
+        float minX = _cameraBounds.min.x + camWidth;
+        float maxX = _cameraBounds.max.x - camWidth;
+        float minY = _cameraBounds.min.y + camHeight;
+        float maxY = _cameraBounds.max.y - camHeight;
+
+        pos.x = Mathf.Clamp(pos.x, minX, maxX);
+        pos.y = Mathf.Clamp(pos.y, minY, maxY);
+
         transform.position = pos;
     }
 
@@ -132,39 +105,18 @@ public class CameraController : MonoBehaviour
     }
 
     /// <summary>
-    /// StageManager에서 스테이지 사이즈 넘겨받아 카메라 설정
+    /// 맵 프리팹 내의 CameraBounds (BoxCollider2D)에서 바운드 정보를 받아 카메라 제한 영역 설정
     /// </summary>
-    public void InitializeCamera(Vector2 stageTileSize)
+    public void SetCameraBounds(BoxCollider2D boundCollider)
     {
-        _stageInitialized = true;
-        _stageSize = stageTileSize;
+        _cameraBounds = boundCollider.bounds;
+        _boundInitialized = true;
 
-        Vector2 fullSize = (_stageSize + Vector2.one * WALL_THICKNESS * 2f) * TILE_UNIT_SIZE;
-        Vector2 offset = new Vector2(Mathf.FloorToInt(-fullSize.x / 2f), Mathf.FloorToInt(-fullSize.y / 2f));
-        _minLimit = offset;
-        _maxLimit = offset + fullSize;
+        // 맵 중앙으로 이동
+        Vector3 center = _cameraBounds.center;
+        transform.position = new Vector3(center.x, center.y, -10f);
 
-        transform.position = new Vector3(0, 0, -10); // 중앙 정렬
-
-        float mapWidth = fullSize.x;
-        float mapHeight = fullSize.y;
-        float aspect = _camera.aspect;
-
-        // 긴쪽에 맞춰 zoom 설정
-        if (aspect >= mapWidth / mapHeight)
-        {
-            // 가로가 넓음 → 가로 맞춤
-            _zoomMin = mapWidth / (2f * aspect);
-        }
-        else
-        {
-            // 세로가 넓음 → 세로 맞춤
-            _zoomMin = mapHeight / 2f;
-        }
-
-        _zoomMax = _zoomMin * 1.2f; // 약간 zoom in 허용
-        _camera.orthographicSize = _zoomMin;
-
+        // 줌 기본값도 재설정 가능
         ClampPosition();
     }
 }

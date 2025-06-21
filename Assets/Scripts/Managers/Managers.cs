@@ -79,7 +79,7 @@ public class Managers : MonoBehaviour
     {
         _resource?.Init();
         _pool?.Init();
-        _spawn?.Init();
+       // _spawn?.Init();
         _stage?.Init();
         _game?.Init();
         _ui?.Init();

@@ -1,62 +1,40 @@
 using UnityEngine;
 
 /// <summary>
-/// 기본 시민 캐릭터를 제어하는 컨트롤러.
-/// 좀비가 시야에 들어오면 회피하고, 그렇지 않으면 맵 내에서 랜덤 배회.
-/// NavMesh 없이, 직접 맵 좌표 기준으로 이동.
+/// 시민 캐릭터를 제어하는 클래스.
+/// 좀비가 없을 땐 배회, 있을 땐 좀비로부터 멀어지는 방향으로 도망.
 /// </summary>
 public class CitizenController : CharacterBase
 {
     [Header("AI 설정")]
-    //[SerializeField] private float _wanderCooldown = 2f;
+    [SerializeField] private float _wanderCooldown = 2f;
+    [SerializeField] private float _escapeRadius = 8f;
+    [SerializeField] private int _escapeSampleCount = 16;
     [SerializeField] private LayerMask _zombieMask;
     [SerializeField] private LayerMask _obstacleMask;
-    
-    [SerializeField] private float _fleeMaintainDuration = 1.5f; // 좀비 안 보여도 도망 유지 시간
+   
 
-    private float _fleeMaintainTimer = 0f; // 도망 유지 타이머
     private float _wanderTimer;
-    private Vector2 _lastWanderTarget;
-    private bool _hasFirstWanderTarget = false;
+    private Vector2 _currentTarget;
+    [SerializeField]private Define.HumanState _humanState = Define.HumanState.Peaceful;
 
-    private Rigidbody2D _rb;
-    private Define.HumanState _humanState = Define.HumanState.Peaceful;
+    /// <summary>현재 시민의 상태를 반환</summary>
+    public Define.HumanState CurrentHumanState => _humanState;
 
-    protected override string StatKey => "Stat_Citizen";
-    protected override string WeaponKey => "Weapon_Citizen";
+    // 좀비가 주변에 있는지 없는지 판별
+    private Transform _lastSeenZombie = null;
+    private bool _needsNewTarget = true;
 
-    /// <summary>
-    /// 기본 초기화: Rigidbody 설정, 레이어 설정 등
-    /// </summary>
-    protected override void Awake()
+    private void Start()
     {
-        base.Awake();
-        _rb = GetComponent<Rigidbody2D>();
-        if (_rb == null)
-            _rb = gameObject.AddComponent<Rigidbody2D>();
-
-        _rb.gravityScale = 0;
-        _rb.constraints = RigidbodyConstraints2D.FreezeRotation;
-
-        _zombieMask = 1 << LayerMask.NameToLayer(Define.LAYER_ZOMBIE);
-        _obstacleMask = 1 << LayerMask.NameToLayer("Wall");
-
-        _wanderTimer = Random.Range(0.5f, 1.5f);
-
-        // 초기 랜덤 목표 위치 설정
-        Vector2 randomOffset = Random.insideUnitCircle.normalized * 2f;
-        _lastWanderTarget = _rb.position + randomOffset;
+        _wanderTimer = Random.Range(0f, _wanderCooldown);
+        Vector2 offset = Random.insideUnitCircle.normalized * _escapeRadius;
+        _currentTarget = (Vector2)transform.position + offset;
     }
 
     private void Update()
     {
-        if (_state != CharacterState.Alive) return;
-
-        if (!_hasFirstWanderTarget)
-        {
-            _hasFirstWanderTarget = true;
-            SetRandomWanderTarget();
-        }
+        if (!IsAlive()) return;
 
         UpdateState();
 
@@ -67,120 +45,132 @@ public class CitizenController : CharacterBase
                 break;
 
             case Define.HumanState.ZombieNearby:
-                Flee();
+                // 현재 타겟까지 거의 도달했거나, 새로운 좀비가 감지되었을 때만 갱신
+                float dist = Vector2.Distance(transform.position, _currentTarget);
+                bool closeToTarget = dist < 0.2f;
+
+                if (_needsNewTarget || closeToTarget)
+                {
+                    DecideEscapeTarget();
+                    _needsNewTarget = false;
+                }
+                break;
+
+            case Define.HumanState.Suspicious:
+                // 추후 추가
                 break;
         }
+
+        MoveTo(_currentTarget);
     }
 
     /// <summary>
-    /// 좀비 감지 및 상태 전환 관리
+    /// 주변 좀비를 탐색하고 시민 상태를 갱신한다.
     /// </summary>
     private void UpdateState()
     {
         Collider2D[] hits = Physics2D.OverlapCircleAll(transform.position, _characterStat.sightRadius, _zombieMask);
-        bool zombieVisible = false;
+
+        Transform nearest = null;
+        float nearestDist = float.MaxValue;
 
         foreach (var hit in hits)
         {
             if (hit == null || hit.transform == null) continue;
+
             RaycastHit2D check = Physics2D.Linecast(transform.position, hit.transform.position, _obstacleMask);
             if (check.collider != null) continue;
-            zombieVisible = true;
-            break;
-        }
 
-        if (zombieVisible)
+            float dist = Vector2.Distance(transform.position, hit.transform.position);
+            if (dist < nearestDist)
+            {
+                nearest = hit.transform;
+                nearestDist = dist;
+            }
+        }
+        if (nearest != null)
         {
-            _humanState = Define.HumanState.ZombieNearby;
-            _fleeMaintainTimer = _fleeMaintainDuration;
+            if (_lastSeenZombie == null || nearest != _lastSeenZombie)
+            {
+                _needsNewTarget = true; // 새로운 좀비 발견
+            }
+
+            _lastSeenZombie = nearest;
         }
         else
         {
-            if (_fleeMaintainTimer > 0f)
-            {
-                _fleeMaintainTimer -= Time.deltaTime;
-                _humanState = Define.HumanState.ZombieNearby;
-            }
-            else
-            {
-                _humanState = Define.HumanState.Peaceful;
-            }
+            _lastSeenZombie = null;
         }
+        _humanState = nearest != null ? Define.HumanState.ZombieNearby : Define.HumanState.Peaceful;
     }
 
     /// <summary>
-    /// 랜덤 배회 이동 처리
+    /// 좀비와 가장 멀어지는 방향을 탐색하여 이동 타겟을 설정한다.
+    /// </summary>
+    private void DecideEscapeTarget()
+    {
+        Vector2 origin = transform.position;
+        Vector2 bestPoint = origin;
+        float bestScore = float.MinValue;
+
+        for (int i = 0; i < _escapeSampleCount; i++)
+        {
+            Vector2 dir = Random.insideUnitCircle.normalized;
+            Vector2 candidate = origin + dir * _escapeRadius;
+
+            // 시야 내 좀비와 거리 측정
+            Collider2D[] zombies = Physics2D.OverlapCircleAll(candidate, _characterStat.sightRadius, _zombieMask);
+            float minDist = float.MaxValue;
+
+            foreach (var z in zombies)
+            {
+                float dist = Vector2.Distance(candidate, z.transform.position);
+                if (dist < minDist) minDist = dist;
+            }
+
+            // 가중치 계산: 좀비로부터 멀수록 점수 증가
+            float score = minDist;
+
+            // 장애물 확인
+            RaycastHit2D hit = Physics2D.Linecast(origin, candidate, _obstacleMask);
+            if (hit.collider != null) score -= 10f;
+
+            if (score > bestScore)
+            {
+                bestScore = score;
+                bestPoint = candidate;
+            }
+        }
+
+        _currentTarget = bestPoint;
+        _wanderTimer = _wanderCooldown; // 이동 리셋
+    }
+
+    /// <summary>
+    /// 지정된 위치로 이동을 수행한다.
+    /// </summary>
+    /// <param name="target">이동 목표 지점</param>
+    public override void MoveTo(Vector2 target)
+    {
+        Vector2 current = _rigid.position;
+        Vector2 dir = (target - current).normalized;
+        Vector2 next = current + dir * _characterStat.moveSpeed * Time.deltaTime;
+
+        _rigid.MovePosition(next);
+    }
+    /// <summary>
+    /// 주변을 무작위로 배회한다.
     /// </summary>
     private void Wander()
     {
-        if (_wanderTimer > 0f)
-        {
-            _wanderTimer -= Time.deltaTime;
-            MoveTo(_lastWanderTarget);
-        }
-        else
-        {
-            _wanderTimer = Random.Range(1.5f, 3f);
-            Vector2 randomOffset = Random.insideUnitCircle.normalized * 2f;
-            _lastWanderTarget = _rb.position + randomOffset;
-        }
+        _wanderTimer -= Time.deltaTime;
+        if (_wanderTimer > 0f) return;
+
+        _wanderTimer = _wanderCooldown;
+        Vector2 offset = Random.insideUnitCircle.normalized * _escapeRadius;
+        _currentTarget = (Vector2)transform.position + offset;
     }
 
-
-    /// <summary>
-    /// 좀비 발견 시 도망 이동 처리
-    /// </summary>
-    private void Flee()
-    {
-        Vector2 fleeDir = GetFleeDirection();
-        if (fleeDir == Vector2.zero) return;
-
-        Vector2 fleeTarget = _rb.position + fleeDir * 3f;
-        MoveTo(fleeTarget);
-    }
-
-    /// <summary>
-    /// 도망 방향 계산
-    /// </summary>
-    private Vector2 GetFleeDirection()
-    {
-        Collider2D[] hits = Physics2D.OverlapCircleAll(transform.position, _characterStat.sightRadius, _zombieMask);
-        Vector2 fleeDir = Vector2.zero;
-
-        foreach (var hit in hits)
-        {
-            if (hit == null || hit.transform == null) continue;
-            RaycastHit2D check = Physics2D.Linecast(transform.position, hit.transform.position, _obstacleMask);
-            if (check.collider != null) continue;
-
-            Vector2 toZombie = (Vector2)hit.transform.position - _rb.position;
-            float dist = toZombie.magnitude;
-            if (dist == 0) continue;
-
-            Vector2 away = -toZombie.normalized / dist;
-            fleeDir += away;
-        }
-
-        return fleeDir.normalized;
-    }
-
-    /// <summary>
-    /// 타겟 좌표로 이동 처리
-    /// </summary>
-    public override void MoveTo(Vector2 target)
-    {
-        if (_characterStat == null || _rb == null) return;
-
-        float moveDelta = _characterStat.moveSpeed * Time.fixedDeltaTime;
-
-        Vector2 clampedTarget = new Vector2(
-            Mathf.Clamp(target.x, TilemapFloorGenerator.PlayableAreaBounds.min.x, TilemapFloorGenerator.PlayableAreaBounds.max.x),
-            Mathf.Clamp(target.y, TilemapFloorGenerator.PlayableAreaBounds.min.y, TilemapFloorGenerator.PlayableAreaBounds.max.y)
-        );
-
-        Vector2 newPos = Vector2.MoveTowards(_rb.position, clampedTarget, moveDelta);
-        _rb.MovePosition(newPos);
-    }
 
     private void OnMouseDown()
     {
@@ -191,7 +181,7 @@ public class CitizenController : CharacterBase
             return;
         }
 
-        if (_state != CharacterState.Alive)
+        if (_state != Define.CharacterState.Alive)
         {  
              Debug.Log("💉 살아있지 않은 시민의 경우 리턴 시킴");
             //살아있지 않은 시민의 경우 리턴 시킴
@@ -214,9 +204,9 @@ public class CitizenController : CharacterBase
     /// </summary>
     private void ClickInfection()
     {
-        if (_state != CharacterState.Alive) return;
-        Managers.VFXManager.Play("VFX_ClickHolyPower", transform.position, Quaternion.identity);
-        _state = CharacterState.Infected;
+        if (_state !=  Define.CharacterState.Alive) return;
+
+        _state = Define.CharacterState.Infected;
         Die();
     }
 
@@ -230,14 +220,17 @@ public class CitizenController : CharacterBase
     /// </summary>
     public override void Die()
     {
-        if (_state == CharacterState.Dead) return;
+        if (_state == Define.CharacterState.Dead) return;
 
-        if (_state == CharacterState.Infected)
+        if (_state == Define.CharacterState.Infected)
         {
             Managers.Spawn.SpawnZombie(transform.position);
         }
 
-        _state = CharacterState.Dead;
+        _state = Define.CharacterState.Dead;
+
+        if (_infectionDOT != null)
+            StopCoroutine(_infectionDOT.StartDOT(this));
 
         if (_col != null)
             _col.enabled = false;
@@ -252,13 +245,18 @@ public class CitizenController : CharacterBase
         Destroy(gameObject);
     }
 
+#if UNITY_EDITOR
     /// <summary>
-    /// 랜덤 배회 목표 설정
+    /// 디버깅용 시야 및 타겟 시각화
     /// </summary>
-    private void SetRandomWanderTarget()
+    private void OnDrawGizmosSelected()
     {
-        Vector2 randomOffset = Random.insideUnitCircle.normalized * 2f;
-        _lastWanderTarget = _rb.position + randomOffset;
-    }
+        Gizmos.color = Color.yellow;
+        Gizmos.DrawWireSphere(transform.position, _characterStat != null ? _characterStat.sightRadius : 5f);
 
+        Gizmos.color = Color.green;
+        Gizmos.DrawLine(transform.position, _currentTarget);
+        Gizmos.DrawWireSphere(_currentTarget, 0.2f);
+    }
+#endif
 }

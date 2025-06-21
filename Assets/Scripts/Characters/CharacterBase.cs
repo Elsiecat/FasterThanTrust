@@ -3,25 +3,26 @@ using Utils;
 using Combat;
 
 /// <summary>
-/// 캐릭터의 공통 기능을 담당하는 베이스 클래스.
-/// 체력, 상태, 무기, 스탯 등을 포함하며, NavMesh 없이 직접 이동 처리한다.
+/// 캐릭터의 기본 동작과 상태를 제어하는 베이스 클래스.
+/// 시민과 좀비 모두 이 클래스를 상속받아 동작.
 /// </summary>
 public abstract class CharacterBase : MonoBehaviour
 {
     [Header("기본 스탯")]
     [SerializeField] protected int _level = 1; // 캐릭터 레벨
-    [SerializeField] protected CharacterStat _characterStat; // 캐릭터 능력치
-    [SerializeField] protected Weapon _weapon; // 무기 정보 (ScriptableObject)
+    [SerializeField] protected CharacterStat _characterStat; // 캐릭터 스탯
+    [SerializeField] protected Weapon _weapon;               // 장착 무기
 
     [Header("상태")]
     [SerializeField] protected float _currentHP; // 현재 체력
-    [SerializeField] protected CharacterState _state = CharacterState.Alive; // 현재 캐릭터 상태
     [SerializeField] protected InfectionDOT _infectionDOT; // 감염 DOT 효과
+    [SerializeField] protected Define.CharacterState _state = Define.CharacterState.Alive; // 현재 캐릭터 상태
     protected DamageIndicatorRoot _damageIndicatorRoot;
 
     protected Rigidbody2D _rigid;
-    protected Collider2D _col; // 충돌 판정용
+    protected BoxCollider2D _col; // 충돌 판정용
     protected SpriteRenderer _spriteRenderer; //처맞았을때 깜빡!하게 할 용도
+
 
     // 자식 클래스에서 오버라이딩할 Stat/Weapon 키값
     protected virtual string StatKey => null;
@@ -35,11 +36,16 @@ public abstract class CharacterBase : MonoBehaviour
     private Coroutine _infectionCoroutine;
 
     /// <summary>
+    /// 캐릭터가 현재 생존 상태인지 여부
+    /// </summary>
+    public bool IsAlive() => _state == Define.CharacterState.Alive;
+
+    /// <summary>
     /// 기본 Awake: Collider 초기화, 스탯/무기 로드 및 체력 설정
     /// </summary>
     protected virtual void Awake()
     {
-        _col = GetComponent<Collider2D>();
+        _col = GetComponent<BoxCollider2D>();
         _rigid = GetComponent<Rigidbody2D>();
         _spriteRenderer = GetComponent<SpriteRenderer>();
         _flashMaterial = Resources.Load<Material>("Materials/SpriteFlashMaterial");
@@ -58,15 +64,28 @@ public abstract class CharacterBase : MonoBehaviour
             _currentHP = _characterStat.maxHp;
     }
 
+    /// <summary>
+    /// 이동 명령 처리. 지정 위치로 물리 이동.
+    /// </summary>
+    /// <param name="target">이동할 월드 좌표</param>
+    public virtual void MoveTo(Vector2 target)
+    {
+        if (_characterStat == null || _rigid == null) return;
+
+        Vector2 direction = (target - _rigid.position).normalized;
+        Vector2 newPos = _rigid.position + direction * _characterStat.moveSpeed * Time.deltaTime;
+        _rigid.MovePosition(newPos);
+    }
 
     /// <summary>
-    /// 피해를 입으면 체력을 감소시키고 죽음 여부를 판단한다.
+    /// 데미지를 입는다. 방어력, 회피력 적용 포함.
     /// </summary>
+    /// <param name="damage">기본 데미지</param>
+    /// <param name="attacker">공격자</param>
     public virtual void TakeDamage(float rawDamage, CharacterBase attacker)
     {
-
         
-        if (_state == CharacterState.Dead)
+        if (_state == Define.CharacterState.Dead)
             return;
 
         if (_characterStat != null && DamageCalculator.TryEvade(_characterStat.evasion))
@@ -104,27 +123,25 @@ public abstract class CharacterBase : MonoBehaviour
             Die();
     }
 
-
-
     /// <summary>
     /// 감염 DOT 효과를 적용한다.
     /// 
     /// </summary>
     public virtual void ApplyInfection(Weapon attackerWeapon, CharacterBase attacker)
     {
-        if (_state != CharacterState.Alive) return;
+        if (_state != Define.CharacterState.Alive) return;
 
         // 이미 감염 중이면 무시
-        if (_state == CharacterState.Infected || _infectionDOT != null)
+        if (_state == Define.CharacterState.Infected || _infectionDOT != null)
             return;
 
         if (Random.value <= attackerWeapon.infectionChance)
         {
-            _state = CharacterState.Infected;
+            _state = Define.CharacterState.Infected;
 
-            _infectionDOT = attackerWeapon.CreateDOT(attacker);
-            if (_infectionDOT != null)
-                _infectionCoroutine = CoroutineRunner.Instance.StartCoroutine(_infectionDOT.StartDOT(this, attacker));
+        //    _infectionDOT = attackerWeapon.CreateDOT(attacker);
+        //    if (_infectionDOT != null)
+        //        _infectionCoroutine = CoroutineRunner.Instance.StartCoroutine(_infectionDOT.StartDOT(attacker));
         }
     }
 
@@ -134,9 +151,9 @@ public abstract class CharacterBase : MonoBehaviour
     /// </summary>
     public virtual void Die()
     {
-        if (_state == CharacterState.Dead) return;
+        if (_state == Define.CharacterState.Dead) return;
 
-        _state = CharacterState.Dead;
+        _state = Define.CharacterState.Dead;
 
         if (_infectionCoroutine != null) // ✅ 핸들로 중지
             CoroutineRunner.Instance.StopCoroutine(_infectionCoroutine);
@@ -147,43 +164,9 @@ public abstract class CharacterBase : MonoBehaviour
         HandleDeathOutcome();
     }
 
-    /// <summary>
-    /// 외부에서 목적지를 지정해 이동시키는 메서드
-    /// </summary>
-    public virtual void MoveTo(Vector2 target)
-    {
-        if (_characterStat == null || _rigid == null) return;
-
-        // 경계 Clamp 처리
-        Vector2 clampedTarget = new Vector2(
-            Mathf.Clamp(target.x, TilemapFloorGenerator.PlayableAreaBounds.min.x, TilemapFloorGenerator.PlayableAreaBounds.max.x),
-            Mathf.Clamp(target.y, TilemapFloorGenerator.PlayableAreaBounds.min.y, TilemapFloorGenerator.PlayableAreaBounds.max.y)
-        );
-
-        transform.position = Vector2.MoveTowards(
-            _rigid.position,
-            clampedTarget,
-            _characterStat.moveSpeed * Time.deltaTime
-        );
-    }
 
     /// <summary>
-    /// 캐릭터가 살아있는 상태인지 확인
-    /// </summary>
-    public bool IsAlive() => _state != CharacterState.Dead;
-
-    /// <summary>
-    /// 죽었을 때 처리할 캐릭터별 개별 행동 (상속 클래스에서 정의)
+    /// 사망 후 개별 처리 (예: 좀비 소환, 파괴 등). 파생 클래스에서 구현.
     /// </summary>
     protected abstract void HandleDeathOutcome();
-
-#if UNITY_EDITOR
-    private void OnDrawGizmosSelected()
-    {
-        if (_characterStat == null) return;
-
-        Gizmos.color = Color.yellow;
-        Gizmos.DrawWireSphere(transform.position, _characterStat.sightRadius);
-    }
-#endif
 }
